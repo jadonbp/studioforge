@@ -2347,28 +2347,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rbx-studio-mcp"
-version = "0.1.0"
-dependencies = [
- "axum",
- "clap 4.5.57",
- "color-eyre",
- "core-foundation 0.10.1",
- "native-dialog",
- "reqwest 0.13.1",
- "rmcp",
- "roblox_install",
- "rojo",
- "security-translocate",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "rbx_binary"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3195,6 +3173,28 @@ name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
+
+[[package]]
+name = "studioforge"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "clap 4.5.57",
+ "color-eyre",
+ "core-foundation 0.10.1",
+ "native-dialog",
+ "reqwest 0.13.1",
+ "rmcp",
+ "roblox_install",
+ "rojo",
+ "security-translocate",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
 
 [[package]]
 name = "subtle"

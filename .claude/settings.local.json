@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \":*)",
+      "Bash(pip install pdfplumber pypdf)",
+      "Bash(python3 -c \":*)",
+      "Bash(python3:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__obsidian-mcp-tools__fetch",
+      "Bash(gh repo view Roblox/studio-rust-mcp-server --json name,description,defaultBranchRef)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(cargo build)",
+      "Bash(rustup update stable)",
+      "Bash(./target/debug/studioforge.exe --help)",
+      "Bash(./target/debug/studioforge.exe doctor)"
+    ]
+  }
+}

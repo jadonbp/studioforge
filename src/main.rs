@@ -1,5 +1,5 @@
 use axum::routing::{get, post};
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use color_eyre::eyre::Result;
 use rbx_studio_server::*;
 use rmcp::ServiceExt;
@@ -8,18 +8,33 @@ use std::net::Ipv4Addr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tracing_subscriber::{self, EnvFilter};
+mod cli;
 mod error;
 mod install;
 mod rbx_studio_server;
 
-/// Simple MCP proxy for Roblox Studio
-/// Run without arguments to install the plugin
+/// StudioForge — AI-powered development toolkit for Roblox Studio
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Run as MCP server on stdio
+#[command(name = "studioforge", version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Commands>,
+
+    /// Run as MCP server on stdio (shorthand for `studioforge serve`)
     #[arg(short, long)]
     stdio: bool,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Run the MCP server on stdio
+    Serve,
+    /// Install the Studio plugin and configure MCP clients
+    Install,
+    /// Generate .mcp.json and CLAUDE.md for the current project
+    Init,
+    /// Run diagnostic checks
+    Doctor,
 }
 
 #[tokio::main]
@@ -32,11 +47,23 @@ async fn main() -> Result<()> {
         .with_thread_ids(true)
         .init();
 
-    let args = Args::parse();
-    if !args.stdio {
-        return install::install().await;
-    }
+    let cli = Cli::parse();
 
+    // Determine what to do based on subcommand or --stdio flag
+    match cli.command {
+        Some(Commands::Serve) => run_server().await,
+        Some(Commands::Install) => install::install().await,
+        Some(Commands::Init) => cli::init().await,
+        Some(Commands::Doctor) => cli::doctor().await,
+        None if cli.stdio => run_server().await,
+        None => {
+            // No subcommand and no --stdio flag: run install (upstream default behavior)
+            install::install().await
+        }
+    }
+}
+
+async fn run_server() -> Result<()> {
     tracing::debug!("Debug MCP tracing enabled");
 
     let server_state = Arc::new(Mutex::new(AppState::new()));
@@ -69,7 +96,6 @@ async fn main() -> Result<()> {
         })
     };
 
-    // Create an instance of our counter router
     let service = RBXStudioServer::new(Arc::clone(&server_state))
         .serve(rmcp::transport::stdio())
         .await

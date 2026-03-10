@@ -1,9 +1,13 @@
 [package]
-name = "rbx-studio-mcp"
+name = "studioforge"
 version = "0.1.0"
 edition = "2021"
 publish = false
 license = "MIT"
+
+[[bin]]
+name = "studioforge"
+path = "src/main.rs"
 
 [dependencies]
 rmcp = { version = "0.14", features = ["server", "transport-io"] }

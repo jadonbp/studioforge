@@ -11,7 +11,7 @@ use std::vec;
 use std::{env, fs, io};
 
 fn get_message(successes: String) -> String {
-    format!("Roblox Studio MCP is ready to go.
+    format!("StudioForge is ready to go.
 Please restart Studio and MCP clients to apply the changes.
 
 Tools included:
@@ -21,6 +21,11 @@ Tools included:
 - start_stop_play
 - run_script_in_play_mode
 - get_studio_mode
+- read_script (StudioForge)
+- write_script (StudioForge)
+- get_children (StudioForge)
+- get_properties (StudioForge)
+- get_selection (StudioForge)
 
 MCP Clients set up:
 {successes}
@@ -120,7 +125,7 @@ pub fn suggest_to_config_claude_code(exe_path: &Path) -> Result<String> {
     let config_path = Path::new(&home_dir).join(".claude.json");
 
     if config_path.exists() {
-        Ok(format!("To add the MCP to Claude Code CLI run:\nclaude mcp add --transport stdio Roblox_Studio -- '{}' --stdio", exe_path.display()))
+        Ok(format!("To add the MCP to Claude Code CLI run:\nclaude mcp add --transport stdio StudioForge -- '{}' --stdio", exe_path.display()))
     } else {
         Err(eyre!("No config file found"))
     }
@@ -169,7 +174,7 @@ pub fn install_to_config(
             mcp_servers.remove("Roblox Studio");
         }
 
-        config["mcpServers"]["Roblox_Studio"] = json!({
+        config["mcpServers"]["StudioForge"] = json!({
           "command": &exe_path,
           "args": [
             "--stdio"
@@ -245,7 +250,7 @@ async fn install_internal() -> Result<String> {
 pub async fn install() -> Result<()> {
     use std::process::Command;
     if let Err(e) = install_internal().await {
-        tracing::error!("Failed initialize Roblox MCP: {:#}", e);
+        tracing::error!("Failed to initialize StudioForge: {:#}", e);
     }
     let _ = Command::new("cmd.exe").arg("/c").arg("pause").status();
     Ok(())
@@ -262,7 +267,7 @@ pub async fn install() -> Result<()> {
             .set_level(MessageLevel::Info)
             .set_text(msg),
     };
-    let _ = alert_builder.set_title("Roblox Studio MCP").alert().show();
+    let _ = alert_builder.set_title("StudioForge").alert().show();
     Ok(())
 }
 

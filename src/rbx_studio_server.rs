@@ -82,17 +82,32 @@ impl ServerHandler for RBXStudioServer {
             protocol_version: ProtocolVersion::LATEST,
             capabilities: ServerCapabilities::builder().enable_tools().build(),
             server_info: Implementation {
-                name: "Roblox_Studio".to_string(),
+                name: "StudioForge".to_string(),
                 version: env!("CARGO_PKG_VERSION").to_string(),
-                title: Some("Roblox Studio MCP Server".to_string()),
+                title: Some("StudioForge MCP Server for Roblox Studio".to_string()),
                 icons: None,
                 website_url: None,
             },
             instructions: Some(
-                "You must aware of current studio mode before using any tools, infer the mode from conversation context or get_studio_mode.
-User run_code to query data from Roblox Studio place or to change it
-After calling run_script_in_play_mode, the datamodel status will be reset to stop mode.
-Prefer using start_stop_play tool instead run_script_in_play_mode, Only used run_script_in_play_mode to run one time unit test code on server datamodel.
+                "StudioForge — AI development toolkit for Roblox Studio.
+
+Check studio mode with get_studio_mode before using play-mode tools.
+
+Script workflow (primary):
+- Use read_script to read script source by dot-separated path (e.g., 'ServerScriptService.GameManager').
+- Use write_script to create or update scripts. Creates intermediate folders automatically.
+- Always read before writing. Make targeted changes, not full rewrites.
+
+Exploration:
+- Use get_children to navigate the instance hierarchy.
+- Use get_properties to inspect instance properties.
+- Use get_selection to see what the user has selected in Explorer.
+
+Execution:
+- Use run_code to execute Luau in edit context for queries or bulk changes.
+- Use start_stop_play to control playtesting.
+- Use run_script_in_play_mode for one-shot server-side tests (resets to stop mode after).
+- Use get_console_output to read Studio output.
 "
                     .to_string(),
             ),
@@ -135,6 +150,40 @@ struct RunScriptInPlayMode {
     mode: String,
 }
 
+// StudioForge new tool argument structs
+
+#[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
+struct ReadScript {
+    #[schemars(description = "Dot-separated path to the script (e.g., 'ServerScriptService.GameManager')")]
+    path: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
+struct WriteScript {
+    #[schemars(description = "Dot-separated path for the script (e.g., 'ServerScriptService.Systems.Combat')")]
+    path: String,
+    #[schemars(description = "The Luau source code to write")]
+    source: String,
+    #[serde(rename = "scriptType")]
+    #[schemars(description = "Script type: 'Script', 'LocalScript', or 'ModuleScript'. Only used when creating new scripts. Auto-detected from path if omitted.")]
+    script_type: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
+struct GetChildren {
+    #[schemars(description = "Dot-separated instance path (e.g., 'ServerScriptService' or 'Workspace.Folder1')")]
+    path: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
+struct GetProperties {
+    #[schemars(description = "Dot-separated instance path (e.g., 'Workspace.SpawnLocation')")]
+    path: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
+struct GetSelection {}
+
 #[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
 enum ToolArgumentValues {
     RunCode(RunCode),
@@ -143,6 +192,11 @@ enum ToolArgumentValues {
     StartStopPlay(StartStopPlay),
     RunScriptInPlayMode(RunScriptInPlayMode),
     GetStudioMode(GetStudioMode),
+    ReadScript(ReadScript),
+    WriteScript(WriteScript),
+    GetChildren(GetChildren),
+    GetProperties(GetProperties),
+    GetSelection(GetSelection),
 }
 #[tool_router]
 impl RBXStudioServer {
@@ -218,6 +272,63 @@ impl RBXStudioServer {
         Parameters(args): Parameters<GetStudioMode>,
     ) -> Result<CallToolResult, ErrorData> {
         self.generic_tool_run(ToolArgumentValues::GetStudioMode(args))
+            .await
+    }
+
+    // StudioForge new tools
+
+    #[tool(
+        description = "Read a script's source code by its dot-separated instance path. Returns the source code, className, and line count."
+    )]
+    async fn read_script(
+        &self,
+        Parameters(args): Parameters<ReadScript>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.generic_tool_run(ToolArgumentValues::ReadScript(args))
+            .await
+    }
+
+    #[tool(
+        description = "Create or update a Script, LocalScript, or ModuleScript at the given path. Creates intermediate folders automatically. Script type is auto-detected from the path if not specified."
+    )]
+    async fn write_script(
+        &self,
+        Parameters(args): Parameters<WriteScript>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.generic_tool_run(ToolArgumentValues::WriteScript(args))
+            .await
+    }
+
+    #[tool(
+        description = "List the children of an instance by its dot-separated path. Returns each child's name and className."
+    )]
+    async fn get_children(
+        &self,
+        Parameters(args): Parameters<GetChildren>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.generic_tool_run(ToolArgumentValues::GetChildren(args))
+            .await
+    }
+
+    #[tool(
+        description = "Read properties of an instance by its dot-separated path. Returns common properties, class-specific properties, and custom attributes."
+    )]
+    async fn get_properties(
+        &self,
+        Parameters(args): Parameters<GetProperties>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.generic_tool_run(ToolArgumentValues::GetProperties(args))
+            .await
+    }
+
+    #[tool(
+        description = "Get the currently selected instances in Roblox Studio's Explorer panel. Returns each selected instance's name, className, and path."
+    )]
+    async fn get_selection(
+        &self,
+        Parameters(args): Parameters<GetSelection>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.generic_tool_run(ToolArgumentValues::GetSelection(args))
             .await
     }
 
