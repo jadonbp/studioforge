@@ -14,7 +14,12 @@
       "Bash(cargo build)",
       "Bash(rustup update stable)",
       "Bash(./target/debug/studioforge.exe --help)",
-      "Bash(./target/debug/studioforge.exe doctor)"
+      "Bash(./target/debug/studioforge.exe doctor)",
+      "Bash(cargo run -- install)",
+      "Bash(cargo clean -p studioforge)",
+      "WebFetch(domain:devforum.roblox.com)",
+      "WebFetch(domain:create.roblox.com)",
+      "Bash(find target:*)"
     ]
   }
 }

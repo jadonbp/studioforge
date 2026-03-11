@@ -108,6 +108,11 @@ Execution:
 - Use start_stop_play to control playtesting.
 - Use run_script_in_play_mode for one-shot server-side tests (resets to stop mode after).
 - Use get_console_output to read Studio output.
+
+Client-side testing:
+- Use run_client_script_in_play_mode for one-shot client-side tests (GUIs, LocalScripts, client systems).
+- Use get_gui_tree to inspect the PlayerGui hierarchy during playtest.
+- Use capture_playtest_screenshot to visually verify the game during playtest.
 "
                     .to_string(),
             ),
@@ -184,6 +189,31 @@ struct GetProperties {
 #[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
 struct GetSelection {}
 
+// Phase 2: Playtest intelligence tools
+
+#[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
+struct RunClientScriptInPlayMode {
+    #[schemars(description = "Luau code to run on the client during playtest")]
+    code: String,
+    #[schemars(description = "Timeout in seconds, defaults to 30")]
+    timeout: Option<u32>,
+}
+
+#[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
+struct GetGuiTree {
+    #[schemars(description = "Maximum depth to traverse the GUI hierarchy (default 10)")]
+    depth: Option<u32>,
+}
+
+#[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
+struct CapturePlaytestScreenshot {
+    #[serde(rename = "includeUI")]
+    #[schemars(
+        description = "Whether to include UI elements in the screenshot (default true)"
+    )]
+    include_ui: Option<bool>,
+}
+
 #[derive(Debug, Deserialize, Serialize, schemars::JsonSchema, Clone)]
 enum ToolArgumentValues {
     RunCode(RunCode),
@@ -197,6 +227,9 @@ enum ToolArgumentValues {
     GetChildren(GetChildren),
     GetProperties(GetProperties),
     GetSelection(GetSelection),
+    RunClientScriptInPlayMode(RunClientScriptInPlayMode),
+    GetGuiTree(GetGuiTree),
+    CapturePlaytestScreenshot(CapturePlaytestScreenshot),
 }
 #[tool_router]
 impl RBXStudioServer {
@@ -332,6 +365,50 @@ impl RBXStudioServer {
             .await
     }
 
+    // Phase 2: Playtest intelligence tools
+
+    #[tool(
+        description = "Run a Luau script on the CLIENT during a one-shot playtest. Useful for testing GUIs, LocalScripts, and client-side systems.
+        The script runs inside the player's client context (has access to LocalPlayer, PlayerGui, UserInputService, etc.).
+        Returns the same result format as run_script_in_play_mode: { success, value, error, logs, errors, duration, isTimeout }.
+        Auto-resets to stop mode after the script finishes or times out.
+        - Only use this when you need client-side context. For server-side tests, use run_script_in_play_mode instead.
+        - If it returns 'Previous call to start play session has not been completed', call start_stop_play to stop first."
+    )]
+    async fn run_client_script_in_play_mode(
+        &self,
+        Parameters(args): Parameters<RunClientScriptInPlayMode>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.generic_tool_run(ToolArgumentValues::RunClientScriptInPlayMode(args))
+            .await
+    }
+
+    #[tool(
+        description = "Get the PlayerGui hierarchy as a JSON tree during a one-shot playtest. Returns each GUI element's name, className, visible state, position, size, text content, and children.
+        Useful for inspecting UI structure, verifying element visibility, and debugging layout issues.
+        Auto-resets to stop mode after capturing the tree."
+    )]
+    async fn get_gui_tree(
+        &self,
+        Parameters(args): Parameters<GetGuiTree>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.generic_tool_run(ToolArgumentValues::GetGuiTree(args))
+            .await
+    }
+
+    #[tool(
+        description = "Capture a screenshot of the game during a one-shot playtest and return it as an image.
+        Uses CaptureService to take a screenshot from the client's perspective.
+        Auto-resets to stop mode after capturing. Requires the game to be in play mode."
+    )]
+    async fn capture_playtest_screenshot(
+        &self,
+        Parameters(args): Parameters<CapturePlaytestScreenshot>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.generic_tool_run(ToolArgumentValues::CapturePlaytestScreenshot(args))
+            .await
+    }
+
     async fn generic_tool_run(
         &self,
         args: ToolArgumentValues,
@@ -358,7 +435,17 @@ impl RBXStudioServer {
         }
         tracing::debug!("Sending to MCP: {result:?}");
         match result {
-            Ok(result) => Ok(CallToolResult::success(vec![Content::text(result)])),
+            Ok(result) => {
+                // Check for screenshot image data (base64 PNG prefixed with marker)
+                if let Some(base64_data) = result.strip_prefix("__screenshot__:") {
+                    Ok(CallToolResult::success(vec![Content::image(
+                        base64_data,
+                        "image/png",
+                    )]))
+                } else {
+                    Ok(CallToolResult::success(vec![Content::text(result)]))
+                }
+            }
             Err(err) => Ok(CallToolResult::error(vec![Content::text(err.to_string())])),
         }
     }

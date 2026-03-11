@@ -42,6 +42,21 @@ export type GetPropertiesArgs = {
 
 export type GetSelectionArgs = {}
 
+-- Phase 2: Playtest intelligence tools
+
+export type RunClientScriptInPlayModeArgs = {
+	code: string,
+	timeout: number?,
+}
+
+export type GetGuiTreeArgs = {
+	depth: number?,
+}
+
+export type CapturePlaytestScreenshotArgs = {
+	includeUI: boolean?,
+}
+
 export type ToolArgs =
 	{}
 	| { InsertModel: InsertModelArgs }
@@ -53,6 +68,9 @@ export type ToolArgs =
 	| { GetChildren: GetChildrenArgs }
 	| { GetProperties: GetPropertiesArgs }
 	| { GetSelection: GetSelectionArgs }
+	| { RunClientScriptInPlayMode: RunClientScriptInPlayModeArgs }
+	| { GetGuiTree: GetGuiTreeArgs }
+	| { CapturePlaytestScreenshot: CapturePlaytestScreenshotArgs }
 
 export type ToolFunction = (ToolArgs) -> string?
 

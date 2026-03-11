@@ -23,6 +23,18 @@ All script reading and writing is done through StudioForge MCP tools.
   Example: `get_properties({ path: "Workspace.SpawnLocation" })`
 - **get_selection** — See what the user has selected in the Explorer panel.
 
+### Client-Side Testing Tools
+
+- **run_client_script_in_play_mode** — Run Luau code on the CLIENT during a one-shot playtest.
+  Has access to LocalPlayer, PlayerGui, UserInputService, etc. Auto-resets to stop mode.
+  Example: `run_client_script_in_play_mode({ code: "print(game.Players.LocalPlayer.Name)" })`
+- **get_gui_tree** — Inspect the PlayerGui hierarchy during a one-shot playtest.
+  Returns a nested JSON tree of all GUI elements with properties (visible, position, size, text).
+  Example: `get_gui_tree({ depth: 5 })`
+- **capture_playtest_screenshot** — Capture a screenshot of the game during playtest.
+  Returns the screenshot as an image. Uses CaptureService (requires playtest).
+  Example: `capture_playtest_screenshot({ includeUI: true })`
+
 ### Inherited Roblox Tools
 
 - **run_code** — Execute Luau in edit context. Use for data queries or bulk operations.
@@ -66,6 +78,12 @@ Dot-separated, rooted at a DataModel service:
 2. Use `read_script` to examine the relevant code
 3. Fix with `write_script`
 4. Re-test with a playtest cycle
+
+### Visual Debugging (Client-Side)
+1. Use `run_client_script_in_play_mode` to test client-side logic (GUI interactions, input handling)
+2. Use `get_gui_tree` to inspect the UI hierarchy — check visibility, layout, text content
+3. Use `capture_playtest_screenshot` to visually verify the game state
+4. Combine: write a GUI fix → `get_gui_tree` to verify structure → `capture_playtest_screenshot` to verify visuals
 
 ## Roblox Conventions
 

@@ -17,5 +17,26 @@ fn main() {
         }),
     };
     options.run().unwrap();
-    println!("cargo:rerun-if-changed=plugin");
+
+    // Watch all plugin source files individually so Cargo detects new/changed files
+    println!("cargo:rerun-if-changed=plugin/default.project.json");
+    for entry in walkdir("plugin/src") {
+        println!("cargo:rerun-if-changed={}", entry.display());
+    }
+}
+
+/// Recursively collect all file paths under a directory.
+fn walkdir(dir: &str) -> Vec<std::path::PathBuf> {
+    let mut files = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                files.extend(walkdir(&path.to_string_lossy()));
+            } else {
+                files.push(path);
+            }
+        }
+    }
+    files
 }

@@ -13,9 +13,14 @@ local tools: { [string]: Types.ToolFunction } = {
 	-- StudioForge new tools
 	["ReadScript"] = require(Main.Tools.ReadScript),
 	["WriteScript"] = require(Main.Tools.WriteScript),
-	["GetChildren"] = require(Main.Tools.GetChildren),
+	["GetChildren"] = require(Main.Tools:WaitForChild("GetChildren")), -- Existing Instance.GetChildren function
 	["GetProperties"] = require(Main.Tools.GetProperties),
 	["GetSelection"] = require(Main.Tools.GetSelection),
+
+	-- Phase 2: Playtest intelligence tools
+	["RunClientScriptInPlayMode"] = require(Main.Tools.RunClientScriptInPlayMode),
+	["GetGuiTree"] = require(Main.Tools.GetGuiTree),
+	["CapturePlaytestScreenshot"] = require(Main.Tools.CapturePlaytestScreenshot),
 }
 
 local function dispatchTool(toolName: string, args: Types.ToolArgs): string?
