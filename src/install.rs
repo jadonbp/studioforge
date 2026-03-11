@@ -14,18 +14,16 @@ fn get_message(successes: String) -> String {
     format!("StudioForge is ready to go.
 Please restart Studio and MCP clients to apply the changes.
 
+StudioForge is a playtest intelligence companion for Roblox Studio's built-in MCP.
+
 Tools included:
-- run_code
-- insert_model
-- get_console_output
-- start_stop_play
-- run_script_in_play_mode
-- get_studio_mode
-- read_script (StudioForge)
-- write_script (StudioForge)
-- get_children (StudioForge)
-- get_properties (StudioForge)
-- get_selection (StudioForge)
+- run_script_in_play_mode (server-side one-shot test)
+- run_client_script_in_play_mode (client-side one-shot test)
+- get_gui_tree (PlayerGui hierarchy inspection)
+- capture_playtest_screenshot (visual game capture)
+- insert_model (Creator Store model insertion)
+- get_selection (Explorer selection query)
+- get_studio_mode (current Studio mode)
 
 MCP Clients set up:
 {successes}

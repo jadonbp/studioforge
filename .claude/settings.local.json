@@ -26,7 +26,11 @@
       "mcp__StudioForge__capture_playtest_screenshot",
       "mcp__StudioForge__run_code",
       "Bash(tasklist)",
-      "Bash(taskkill //F //IM studioforge.exe)"
+      "Bash(taskkill //F //IM studioforge.exe)",
+      "Read(//c/Users/jadon/AppData/Local/Roblox/Versions/version-19073b5104cb45df/**)",
+      "Bash(powershell -Command \"& { $bytes = [System.IO.File]::ReadAllBytes\\(''C:/Users/jadon/AppData/Local/Roblox/Versions/version-19073b5104cb45df/StudioMCP.exe''\\); $text = [System.Text.Encoding]::UTF8.GetString\\($bytes\\); $matches = [regex]::Matches\\($text, ''[\\\\x20-\\\\x7E]{8,}''\\); $matches | ForEach-Object { $_Value } | Select-String -Pattern ''http|localhost|port|stdio|jsonrpc|mcp|tool|endpoint|luau|script'' | Select-Object -First 50 }\")",
+      "Bash(cmd.exe /c \"%LOCALAPPDATA%\\\\Roblox\\\\mcp.bat\" --help)",
+      "Read(//c/Users/jadon/studioforge/$LOCALAPPDATA/Roblox/**)"
     ]
   }
 }

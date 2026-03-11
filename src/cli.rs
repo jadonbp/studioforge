@@ -93,6 +93,12 @@ pub async fn doctor() -> Result<()> {
         );
     }
 
+    // 7. Built-in StudioMCP detection
+    match check_builtin_mcp() {
+        Ok(path) => println!("[INFO] Built-in StudioMCP: found at {}", path.display()),
+        Err(_) => println!("[INFO] Built-in StudioMCP: not found (optional — StudioForge works standalone)"),
+    }
+
     Ok(())
 }
 
@@ -120,6 +126,19 @@ async fn check_port() -> PortStatus {
         Ok(_) => PortStatus::Free,
         Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => PortStatus::InUse,
         Err(e) => PortStatus::Error(e.to_string()),
+    }
+}
+
+fn check_builtin_mcp() -> Result<PathBuf> {
+    let local_app_data =
+        env::var("LOCALAPPDATA").map_err(|_| eyre!("LOCALAPPDATA not set"))?;
+    let mcp_bat = PathBuf::from(&local_app_data)
+        .join("Roblox")
+        .join("mcp.bat");
+    if mcp_bat.exists() {
+        Ok(mcp_bat)
+    } else {
+        Err(eyre!("not found"))
     }
 }
 
