@@ -15,78 +15,16 @@ if not player then
 	player = Players.PlayerAdded:Wait()
 end
 
--- Wait for the game to render a few frames
-task.wait(1)
-
--- Base64 encoding table
-local b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
-local function base64encode(data: buffer): string
-	local len = buffer.len(data)
-	local result = {}
-	local i = 0
-
-	while i < len do
-		local b0 = buffer.readu8(data, i)
-		local b1 = if i + 1 < len then buffer.readu8(data, i + 1) else 0
-		local b2 = if i + 2 < len then buffer.readu8(data, i + 2) else 0
-
-		local n = b0 * 65536 + b1 * 256 + b2
-
-		table.insert(result, string.sub(b64chars, bit32.rshift(n, 18) + 1, bit32.rshift(n, 18) + 1))
-		table.insert(result, string.sub(b64chars, bit32.band(bit32.rshift(n, 12), 63) + 1, bit32.band(bit32.rshift(n, 12), 63) + 1))
-
-		if i + 1 < len then
-			table.insert(result, string.sub(b64chars, bit32.band(bit32.rshift(n, 6), 63) + 1, bit32.band(bit32.rshift(n, 6), 63) + 1))
-		else
-			table.insert(result, "=")
-		end
-
-		if i + 2 < len then
-			table.insert(result, string.sub(b64chars, bit32.band(n, 63) + 1, bit32.band(n, 63) + 1))
-		else
-			table.insert(result, "=")
-		end
-
-		i = i + 3
-	end
-
-	return table.concat(result)
-end
+-- Wait for the character to load and the world to render
+local character = player.Character or player.CharacterAdded:Wait()
+character:WaitForChild("HumanoidRootPart", 10)
+task.wait(2)
 
 local captureComplete = false
-local captureResult = nil
+local captureContentId = nil
 
 CaptureService:CaptureScreenshot(function(contentId)
-	-- Try to extract image data using EditableImage
-	local success, err = pcall(function()
-		local editableImage = game:GetService("AssetService"):CreateEditableImageAsync(contentId)
-		if not editableImage then
-			error("Failed to create EditableImage from capture")
-		end
-
-		local width = editableImage.Size.X
-		local height = editableImage.Size.Y
-
-		-- Read all pixels as a buffer (RGBA format)
-		local pixelBuffer = editableImage:ReadPixelsBuffer(Vector2.zero, editableImage.Size)
-
-		-- We need to encode this as PNG. Since encoding PNG in Luau is complex,
-		-- we'll send the raw RGBA pixel data with dimensions as a simpler approach.
-		-- The MCP server can convert it if needed, or we use a simpler format.
-
-		-- For now, encode the raw pixel buffer as base64 with a header containing dimensions
-		local headerStr = width .. "x" .. height .. ":"
-		local b64Data = base64encode(pixelBuffer)
-
-		captureResult = headerStr .. b64Data
-		editableImage:Destroy()
-	end)
-
-	if not success then
-		captureResult = "ERROR:" .. tostring(err)
-	end
-
+	captureContentId = contentId
 	captureComplete = true
 end, {
 	UICaptureMode = ]] .. captureMode .. [[,
@@ -99,14 +37,10 @@ while not captureComplete and waitTime < 10 do
 	waitTime = waitTime + 0.1
 end
 
-if not captureComplete then
-	print("[MCP_SCREENSHOT]ERROR:Screenshot capture timed out")
-elseif captureResult then
-	-- Split into chunks to avoid log message size limits
-	local prefix = "[MCP_SCREENSHOT]"
-	print(prefix .. captureResult)
+if captureComplete and captureContentId then
+	print("[MCP_SCREENSHOT]" .. tostring(captureContentId))
 else
-	print("[MCP_SCREENSHOT]ERROR:No capture result")
+	print("[MCP_SCREENSHOT]ERROR:Screenshot capture timed out or failed")
 end
 ]]
 end
@@ -129,7 +63,7 @@ local function handleCapturePlaytestScreenshot(args: Types.CapturePlaytestScreen
 		error("No result from client script execution")
 	end
 
-	-- Parse the result to extract screenshot data from logs
+	-- Parse the result to extract the contentId from logs
 	local parsed = HttpService:JSONDecode(result)
 	if parsed and parsed.logs then
 		for _, log in ipairs(parsed.logs) do
@@ -141,9 +75,8 @@ local function handleCapturePlaytestScreenshot(args: Types.CapturePlaytestScreen
 					error("Screenshot capture failed: " .. string.sub(data, 7))
 				end
 
-				-- Parse dimensions and base64 data: "WIDTHxHEIGHT:BASE64DATA"
-				-- For now, return the raw RGBA base64 with the __screenshot__ prefix
-				-- The Rust side will handle this as image content
+				-- Return the contentId with the __screenshot__ prefix
+				-- The Rust side will resolve the contentId to a file path and read it
 				return "__screenshot__:" .. data
 			end
 		end

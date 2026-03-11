@@ -10,6 +10,7 @@ use rmcp::{
     },
     schemars, tool, tool_handler, tool_router, ErrorData, ServerHandler,
 };
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
@@ -409,6 +410,42 @@ impl RBXStudioServer {
             .await
     }
 
+    /// Read the most recent screenshot PNG from Roblox temp capture storage.
+    /// CaptureService saves PNGs to %LOCALAPPDATA%/Roblox/tmp-capture-storage/
+    /// The contentId (rbxtemp://N) doesn't map to filenames, so we find the newest file.
+    fn read_screenshot_file(_content_id: &str) -> std::result::Result<String, String> {
+        let local_app_data = std::env::var("LOCALAPPDATA")
+            .map_err(|_| "LOCALAPPDATA environment variable not set".to_string())?;
+
+        let storage_dir = std::path::Path::new(&local_app_data)
+            .join("Roblox")
+            .join("tmp-capture-storage");
+
+        if !storage_dir.exists() {
+            return Err(format!(
+                "Capture storage directory not found: {}",
+                storage_dir.display()
+            ));
+        }
+
+        // Find the most recently modified file in the directory
+        let newest_file = std::fs::read_dir(&storage_dir)
+            .map_err(|e| format!("Failed to read capture directory: {e}"))?
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_file())
+            .max_by_key(|e| {
+                e.metadata()
+                    .and_then(|m| m.modified())
+                    .unwrap_or(std::time::SystemTime::UNIX_EPOCH)
+            })
+            .ok_or_else(|| "No screenshot files found in capture storage".to_string())?;
+
+        let png_bytes = std::fs::read(newest_file.path())
+            .map_err(|e| format!("Failed to read screenshot file: {e}"))?;
+
+        Ok(BASE64.encode(&png_bytes))
+    }
+
     async fn generic_tool_run(
         &self,
         args: ToolArgumentValues,
@@ -436,12 +473,18 @@ impl RBXStudioServer {
         tracing::debug!("Sending to MCP: {result:?}");
         match result {
             Ok(result) => {
-                // Check for screenshot image data (base64 PNG prefixed with marker)
-                if let Some(base64_data) = result.strip_prefix("__screenshot__:") {
-                    Ok(CallToolResult::success(vec![Content::image(
-                        base64_data,
-                        "image/png",
-                    )]))
+                // Check for screenshot contentId prefixed with marker
+                // Format: __screenshot__:rbxtemp://filename
+                if let Some(content_id) = result.strip_prefix("__screenshot__:") {
+                    match Self::read_screenshot_file(content_id) {
+                        Ok(base64_data) => Ok(CallToolResult::success(vec![Content::image(
+                            base64_data,
+                            "image/png",
+                        )])),
+                        Err(e) => Ok(CallToolResult::error(vec![Content::text(format!(
+                            "Failed to read screenshot: {e}"
+                        ))])),
+                    }
                 } else {
                     Ok(CallToolResult::success(vec![Content::text(result)]))
                 }

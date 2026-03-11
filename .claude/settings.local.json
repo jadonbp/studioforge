@@ -19,7 +19,14 @@
       "Bash(cargo clean -p studioforge)",
       "WebFetch(domain:devforum.roblox.com)",
       "WebFetch(domain:create.roblox.com)",
-      "Bash(find target:*)"
+      "Bash(find target:*)",
+      "mcp__StudioForge__write_script",
+      "mcp__StudioForge__run_client_script_in_play_mode",
+      "mcp__StudioForge__get_gui_tree",
+      "mcp__StudioForge__capture_playtest_screenshot",
+      "mcp__StudioForge__run_code",
+      "Bash(tasklist)",
+      "Bash(taskkill //F //IM studioforge.exe)"
     ]
   }
 }

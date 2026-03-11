@@ -3179,6 +3179,7 @@ name = "studioforge"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "base64 0.22.1",
  "clap 4.5.57",
  "color-eyre",
  "core-foundation 0.10.1",
